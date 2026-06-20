@@ -3,7 +3,8 @@ import {
   Users, BookOpen, Wallet, Award, Monitor, Navigation, Upload, 
   Check, AlertCircle, Send, Plus, RefreshCw, FileText, Image as ImageIcon, 
   Settings as SettingsIcon, Play, ExternalLink, Calendar, Search, Trash2, 
-  Sparkles, DollarSign, ArrowUpRight, ArrowDownRight, UserCheck, ShieldAlert
+  Sparkles, DollarSign, ArrowUpRight, ArrowDownRight, UserCheck, ShieldAlert,
+  ChevronLeft, ChevronRight, Menu
 } from 'lucide-react';
 import CanvasAnnotator from './components/CanvasAnnotator';
 import CertificateDownloader from './components/CertificateDownloader';
@@ -98,6 +99,367 @@ export default function App() {
   const [certDateColor, setCertDateColor] = useState("#4B5563");
 
   const [certBackground, setCertBackground] = useState<string>("");
+
+  // Sidebar toggle state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Fallback / Offline simulation state
+  const [offlineActive, setOfflineActive] = useState<boolean>(() => {
+    return (
+      window.location.hostname.includes("vercel.app") ||
+      window.location.hostname.includes("github.io") ||
+      localStorage.getItem("bait_khat_offline_forced") === "true"
+    );
+  });
+
+  const getLocalDb = () => {
+    const saved = localStorage.getItem("bait_khat_fallback_db");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object" && parsed.users) {
+          return parsed;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    const DEFAULT_CERT_BG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="%23fcfbfa"/>
+  <rect x="25" y="25" width="750" height="550" fill="none" stroke="%2310B981" stroke-width="4"/>
+  <rect x="35" y="35" width="730" height="530" fill="none" stroke="%23FBBF24" stroke-width="2"/>
+  <path d="M 25 65 L 65 25 M 25 105 L 105 25 M 25 145 L 145 25" stroke="%2310B981" stroke-width="1.5" fill="none" />
+  <path d="M 775 65 L 735 25 M 775 105 L 695 25 M 775 145 L 655 25" stroke="%2310B981" stroke-width="1.5" fill="none" />
+  <path d="M 25 535 L 65 575 M 25 495 L 105 575 M 25 455 L 145 575" stroke="%2310B981" stroke-width="1.5" fill="none" />
+  <path d="M 775 535 L 735 575 M 775 495 L 695 575 M 775 455 L 655 575" stroke="%2310B981" stroke-width="1.5" fill="none" />
+  <path d="M 300 35 L 500 35 L 480 80 L 320 80 Z" fill="%2310B981"/>
+  <text x="400" y="62" font-family="'Inter', sans-serif" font-weight="bold" font-size="16" fill="%23ffffff" text-anchor="middle">BAIT KHAT</text>
+  <text x="400" y="160" font-family="'Inter', sans-serif" font-weight="bold" font-size="32" fill="%231F2937" text-anchor="middle">SERTIFIKAT KELULUSAN</text>
+  <text x="400" y="195" font-family="'Inter', sans-serif" font-size="14" fill="%236B7280" text-anchor="middle" letter-spacing="1">Diberikan secara resmi kepada alumnus sekolah kaligrafi:</text>
+  <circle cx="400" cy="505" r="30" fill="none" stroke="%23FBBF24" stroke-width="2"/>
+  <path d="M 385 505 L 415 505 M 400 490 L 400 520" stroke="%2310B981" stroke-width="2"/>
+  <text x="400" y="460" font-family="'Inter', sans-serif" font-size="13" fill="%239CA3AF" text-anchor="middle">Direktur Utama Bait Khat, Jakarta, Indonesia</text>
+</svg>`;
+    const seeds = {
+      users: [
+        { id: "u-sa1", name: "Irfan Hakim (Super Admin)", email: "admin@baitkhat.com", phone_number: "081234567890", role: "super_admin" as UserRole, branch_id: null },
+        { id: "u-ac1", name: "Fathur (Branch Admin - Bandung)", email: "fathur.bdg@baitkhat.com", phone_number: "081987654321", role: "admin_cabang" as UserRole, branch_id: "b-1" },
+        { id: "u-t1", name: "Ust. Ahmad Naufal (Tutor Naskhi)", email: "ahmad@baitkhat.com", phone_number: "08111222333", role: "tutor" as UserRole, branch_id: null },
+        { id: "u-t2", name: "Ust. Syarifuddin (Tutor Thuluth)", email: "syarif@baitkhat.com", phone_number: "08222333444", role: "tutor" as UserRole, branch_id: null },
+        { id: "u-s1", name: "Fikri Arkan", email: "fikri@study.com", phone_number: "08555666777", role: "siswa" as UserRole, branch_id: "b-1" },
+        { id: "u-s2", name: "Indra Lesmana", email: "indra@study.com", phone_number: "08777888999", role: "siswa" as UserRole, branch_id: "b-1" }
+      ],
+      branches: [
+        { id: "b-1", name: "Cabang Bandung Pusat", address: "Jl. Dago No. 104, Kota Bandung" },
+        { id: "b-2", name: "Cabang Jakarta Timur", address: "Jl. Kalimalang Raya No. 15, Jakarta Timur" }
+      ],
+      courses: [
+        { id: "c-1", title: "Kelas Khat Naskhi Online", description: "Mempelajari dasar-dasar penulisan Kaligrafi Naskhi secara terstruktur, dari ukuran titik pena, kemiringan kalam, hingga sambungan ayat utuh.", type: "online_lms" as any, price: 350000, thumbnail_url: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=300&q=80", is_published: true },
+        { id: "c-2", title: "Sains Thuluth Jamil (Premium)", description: "Kelas luksus mendalami seni kaligrafi Thuluth, aliran paling anggun untuk dekorasi masjid dan ornamen arsitektur.", type: "online_lms" as any, price: 650000, thumbnail_url: "https://images.unsplash.com/photo-1561214115-f2f134cc4912?auto=format&fit=crop&w=300&q=80", is_published: true },
+        { id: "c-3", title: "Lomba Khat Cabang Bandung 2026", description: "Event Lomba Kaligrafi antar provinsi untuk mengasah keahlian para murid dan seniman se-Indonesia.", type: "lomba_event" as any, price: 100000, thumbnail_url: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=300&q=80", is_published: true }
+      ],
+      lessons: [
+        { id: "l-1", course_id: "c-1", title: "Pengenalan Kalam, Kertas Licin & Tinta", type: "video" as any, content: "https://www.youtube.com/embed/dQw4w9WgXcQ", order_number: 1 },
+        { id: "l-2", course_id: "c-1", title: "Kaidah Huruf Mufradah (Alif s/d Dal) & Titik Ukuran", type: "video" as any, content: "https://www.youtube.com/embed/dQw4w9WgXcQ", order_number: 2 },
+        { id: "l-3", course_id: "c-1", title: "Tugas Mandiri 1: Penulisan Huruf Tunggal", type: "text" as any, content: "Petunjuk: Buat coretan 5 kali untuk masing-masing huruf Alif, Ba, Ta, Tsa dengan ukuran 5 titik pena.", order_number: 3 },
+        { id: "l-4", course_id: "c-1", title: "Ujian Akhir Kaligrafi Naskhi Ayat Pendek", type: "pdf" as any, content: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", order_number: 4 },
+        { id: "l-5", course_id: "c-2", title: "Proporsi Khusus Khat Thuluth", type: "video" as any, content: "https://www.youtube.com/embed/dQw4w9WgXcQ", order_number: 1 }
+      ],
+      assignments: [
+        { id: "a-1", lesson_id: "l-3", title: "Tugas Huruf Alif & Ba Beraturan", instruction_text: "Unggah tulisan tangan Anda menggunakan Kalam Handam/Bambu berukuran 2mm dengan tinta hitam di atas Kertas Art Paper licin. Resolusi tinggi tanpa distorsi bayangan.", is_exam: false },
+        { id: "a-2", lesson_id: "l-4", title: "Ujian Mandiri Khat Naskhi - QS Al-Qalam 1-2", instruction_text: "Tuliskan ayat 'Nun. Wal-qalami wa ma yasthurun' dengan kaidah Naskhi sempurna. Hasil akhir dinilai mutlak oleh Tutor Penanggungjawab.", is_exam: true }
+      ],
+      enrollments: [
+        { id: "e-1", course_id: "c-1", student_id: "u-s1", tutor_id: "u-t1", status: "active" as any },
+        { id: "e-2", course_id: "c-1", student_id: "u-s2", tutor_id: null, status: "pending" as any }
+      ],
+      submissions: [
+        { 
+          id: "s-1", 
+          assignment_id: "a-1", 
+          student_id: "u-s1", 
+          submitted_file_url: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=90",
+          status: "graded" as any, 
+          grade: 88, 
+          feedback_file_url: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=600&q=90", 
+          feedback_notes: "Sangat bagus, namun perhatikan kepala huruf Ba agar melengkung alami sekitar 1.5 titik pena. Bagian ekor sudah proporsional." 
+        }
+      ],
+      transactions: [
+        { id: "t-1", user_id: "u-s1", course_id: "c-1", amount: 350000, payment_type: "manual", status: "paid" as any, proof_url: "https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?auto=format&fit=crop&w=400&q=80", midtrans_snap_token: null },
+        { id: "t-2", user_id: "u-s2", course_id: "c-1", amount: 350000, payment_type: "midtrans", status: "pending_verification" as any, proof_url: null, midtrans_snap_token: "mock-snap-token-123" }
+      ],
+      finances: [
+        { id: "f-1", branch_id: "b-1", type: "income" as any, amount: 350000, description: "Pendaftaran Kelas Khat Naskhi Online - Fikri Arkan", transaction_date: "2026-06-18T10:00:00.000Z" },
+        { id: "f-2", branch_id: "b-1", type: "expense" as any, amount: 120000, description: "Pembelian Kertas Art Paper & Kalam Handam Cabang", transaction_date: "2026-06-19T14:30:00.000Z" },
+        { id: "f-3", branch_id: "b-1", type: "payroll" as any, amount: 150000, description: "Gaji Tutor Ust. Ahmad Naufal - Pengajaran Fikri Arkan", transaction_date: "2026-06-20T08:00:00.000Z" }
+      ],
+      settings: {
+        payment_gateway_active: false,
+        certificate_template_url: DEFAULT_CERT_BG,
+        cert_coord_name: { x: 400, y: 250, font_size: 26, font_color: "#1F2937" },
+        cert_coord_course: { x: 400, y: 320, font_size: 20, font_color: "#10B981" },
+        cert_coord_date: { x: 400, y: 380, font_size: 14, font_color: "#4B5563" }
+      }
+    };
+    localStorage.setItem("bait_khat_fallback_db", JSON.stringify(seeds));
+    return seeds;
+  };
+
+  const saveLocalDb = (data: any) => {
+    localStorage.setItem("bait_khat_fallback_db", JSON.stringify(data));
+  };
+
+  // Lexically scoped fetch wrapper that intercepts API routes and provides local simulated routing on network / file issues
+  const fetch = async (url: string, init?: RequestInit): Promise<Response> => {
+    const isVercel = window.location.hostname.includes("vercel.app") || window.location.hostname.includes("github.io");
+    
+    const mockResponse = (data: any): Response => {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ "Content-Type": "application/json" }),
+        json: async () => data,
+        text: async () => JSON.stringify(data)
+      } as any;
+    };
+
+    if (!isVercel && !offlineActive) {
+      try {
+        const res = await window.fetch(url, init);
+        if (res.ok) {
+          if (url === "/api/db") {
+            const data = await res.clone().json();
+            saveLocalDb(data);
+          }
+          return res;
+        }
+        if (res.status === 404 || res.status === 500) {
+          console.warn(`Server status ${res.status}, using offline simulation`);
+          setOfflineActive(true);
+          localStorage.setItem("bait_khat_offline_forced", "true");
+        }
+      } catch (err) {
+        console.warn("Network error to server, using offline simulation", err);
+        setOfflineActive(true);
+        localStorage.setItem("bait_khat_offline_forced", "true");
+      }
+    }
+
+    const path = url.split("?")[0];
+    const method = init?.method || "GET";
+    const body = init?.body ? JSON.parse(init.body as string) : null;
+    const currentLocalDb = getLocalDb();
+
+    if (path === "/api/db" && method === "GET") {
+      return mockResponse(currentLocalDb);
+    }
+
+    if (path === "/api/reset" && method === "POST") {
+      localStorage.removeItem("bait_khat_fallback_db");
+      const seeds = getLocalDb();
+      return mockResponse({ success: true, db: seeds });
+    }
+
+    if (path === "/api/users" && method === "POST") {
+      const { action, user } = body;
+      if (action === "create") {
+        const newUser = { id: `u-${Date.now()}`, ...user };
+        currentLocalDb.users.push(newUser);
+        saveLocalDb(currentLocalDb);
+        return mockResponse({ success: true, user: newUser });
+      }
+      if (action === "delete") {
+        currentLocalDb.users = currentLocalDb.users.filter((u: any) => u.id !== user.id);
+        saveLocalDb(currentLocalDb);
+        return mockResponse({ success: true });
+      }
+    }
+
+    if (path === "/api/courses" && method === "POST") {
+      const { action, course } = body;
+      if (action === "create") {
+        const newCourse = { id: `c-${Date.now()}`, is_published: true, ...course };
+        currentLocalDb.courses.push(newCourse);
+        saveLocalDb(currentLocalDb);
+        return mockResponse({ success: true, course: newCourse });
+      }
+    }
+
+    if (path === "/api/lessons" && method === "POST") {
+      const { action, lesson } = body;
+      if (action === "create") {
+        const newLesson = { 
+          id: `l-${Date.now()}`, 
+          ...lesson, 
+          order_number: currentLocalDb.lessons.filter((l: any) => l.course_id === lesson.course_id).length + 1 
+        };
+        currentLocalDb.lessons.push(newLesson);
+        saveLocalDb(currentLocalDb);
+        return mockResponse({ success: true, lesson: newLesson });
+      }
+    }
+
+    if (path === "/api/assignments" && method === "POST") {
+      const { action, assignment } = body;
+      if (action === "create") {
+        const newAssignment = { id: `a-${Date.now()}`, ...assignment };
+        currentLocalDb.assignments.push(newAssignment);
+        saveLocalDb(currentLocalDb);
+        return mockResponse({ success: true, assignment: newAssignment });
+      }
+    }
+
+    if (path === "/api/enroll" && method === "POST") {
+      const { student_id, course_id, payment_type, proof_url } = body;
+      const course = currentLocalDb.courses.find((c: any) => c.id === course_id);
+      
+      const newTransaction = {
+        id: `t-${Date.now()}`,
+        user_id: student_id,
+        course_id: course_id,
+        amount: course?.price || 350000,
+        payment_type: payment_type,
+        status: payment_type === 'midtrans' && currentLocalDb.settings.payment_gateway_active ? 'paid' : 'pending_verification',
+        proof_url: proof_url || null,
+        midtrans_snap_token: payment_type === 'midtrans' ? `snap-${Date.now()}` : null
+      };
+      currentLocalDb.transactions.push(newTransaction);
+
+      const newEnrollment = {
+        id: `e-${Date.now()}`,
+        course_id: course_id,
+        student_id: student_id,
+        tutor_id: null,
+        status: newTransaction.status === 'paid' ? 'active' : 'pending'
+      };
+      currentLocalDb.enrollments.push(newEnrollment);
+
+      if (newTransaction.status === 'paid') {
+        currentLocalDb.finances.push({
+          id: `f-${Date.now()}`,
+          branch_id: "b-1",
+          type: "income",
+          amount: course?.price || 350000,
+          description: `Pendaftaran Otomatis: ${course?.title || 'Program'}`,
+          transaction_date: new Date().toISOString()
+        });
+      }
+
+      saveLocalDb(currentLocalDb);
+      return mockResponse({ success: true, transaction: newTransaction, enrollment: newEnrollment });
+    }
+
+    if (path === "/api/assign-tutor" && method === "POST") {
+      const { enrollment_id, tutor_id } = body;
+      const enrollment = currentLocalDb.enrollments.find((e: any) => e.id === enrollment_id);
+      if (enrollment) {
+        enrollment.tutor_id = tutor_id;
+        enrollment.status = "active";
+        
+        const tutor = currentLocalDb.users.find((u: any) => u.id === tutor_id);
+        const course = currentLocalDb.courses.find((c: any) => c.id === enrollment.course_id);
+        if (tutor && course) {
+          const payrollAmount = Math.round(course.price * 0.43); 
+          currentLocalDb.finances.push({
+            id: `f-${Date.now()}`,
+            branch_id: "b-1",
+            type: "payroll",
+            amount: payrollAmount,
+            description: `Penggajian Tutor: ${tutor.name} untuk mhs ${enrollment_id}`,
+            transaction_date: new Date().toISOString()
+          });
+        }
+      }
+      saveLocalDb(currentLocalDb);
+      return mockResponse({ success: true, enrollment });
+    }
+
+    if (path === "/api/verify-payment" && method === "POST") {
+      const { transaction_id } = body;
+      const transaction = currentLocalDb.transactions.find((t: any) => t.id === transaction_id);
+      let enrollment = null;
+      if (transaction) {
+        transaction.status = "paid";
+        enrollment = currentLocalDb.enrollments.find((e: any) => e.course_id === transaction.course_id && e.student_id === transaction.user_id);
+        if (enrollment) {
+          enrollment.status = "active";
+        }
+        const course = currentLocalDb.courses.find((c: any) => c.id === transaction.course_id);
+        currentLocalDb.finances.push({
+          id: `f-${Date.now()}`,
+          branch_id: "b-1",
+          type: "income",
+          amount: transaction.amount,
+          description: `Verifikasi Penjualan: ${course ? course.title : "Program"}`,
+          transaction_date: new Date().toISOString()
+        });
+      }
+      saveLocalDb(currentLocalDb);
+      return mockResponse({ success: true, transaction, enrollment });
+    }
+
+    if (path === "/api/submit-assignment" && method === "POST") {
+      const { assignment_id, student_id, submitted_file_url } = body;
+      let submission = currentLocalDb.submissions.find((s: any) => s.assignment_id === assignment_id && s.student_id === student_id);
+      if (submission) {
+        submission.submitted_file_url = submitted_file_url;
+        submission.status = "submitted";
+        submission.grade = null;
+        submission.feedback_file_url = null;
+        submission.feedback_notes = null;
+      } else {
+        submission = {
+          id: `s-${Date.now()}`,
+          assignment_id,
+          student_id,
+          submitted_file_url,
+          status: "submitted",
+          grade: null,
+          feedback_file_url: null,
+          feedback_notes: null
+        };
+        currentLocalDb.submissions.push(submission);
+      }
+      saveLocalDb(currentLocalDb);
+      return mockResponse({ success: true, submission });
+    }
+
+    if (path === "/api/grade-submission" && method === "POST") {
+      const { submission_id, grade, feedback_notes, feedback_file_url } = body;
+      const submission = currentLocalDb.submissions.find((s: any) => s.id === submission_id);
+      if (submission) {
+        submission.grade = Number(grade);
+        submission.feedback_notes = feedback_notes;
+        submission.feedback_file_url = feedback_file_url || null;
+        submission.status = grade >= 75 ? "graded" : "revised";
+      }
+      saveLocalDb(currentLocalDb);
+      return mockResponse({ success: true, submission });
+    }
+
+    if (path === "/api/update-settings" && method === "POST") {
+      currentLocalDb.settings = { ...currentLocalDb.settings, ...body };
+      saveLocalDb(currentLocalDb);
+      return mockResponse({ success: true, settings: currentLocalDb.settings });
+    }
+
+    if (path === "/api/add-finance" && method === "POST") {
+      const newFinance = {
+        id: `f-${Date.now()}`,
+        branch_id: body.branch_id || "b-1",
+        type: body.type,
+        amount: Number(body.amount),
+        description: body.description,
+        transaction_date: new Date().toISOString()
+      };
+      currentLocalDb.finances.push(newFinance);
+      saveLocalDb(currentLocalDb);
+      return mockResponse({ success: true, finance: newFinance });
+    }
+
+    return mockResponse({ success: false, error: "Mock route not matched" });
+  };
 
   // Notification status simulation
   const [whatsappLogs, setWhatsappLogs] = useState<{ id: string; phone: string; text: string; date: string }[]>([]);
@@ -489,15 +851,30 @@ export default function App() {
   };
 
 
+  if (!db) {
+    return (
+      <div className="min-h-screen bg-[#F9FBFA] flex flex-col items-center justify-center p-20 text-slate-500 text-center">
+        <RefreshCw className="w-10 h-10 animate-spin text-emerald-600 mb-3" />
+        <p className="font-semibold text-lg">Memuat Arsitektur Relasi Database & Cloud Storage...</p>
+        <p className="text-sm opacity-70">Menyiapkan modul visualisasi khat lossless tanpa kompresi.</p>
+        {offlineActive && (
+          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 px-3.5 py-1.5 rounded-full mt-4 font-semibold inline-flex items-center gap-1">
+            💡 Mode Offline Aktif: Data berjalan langsung di browser Anda.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#F9FBFA] text-slate-800 font-sans antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased flex flex-col">
       
       {/* 1. TOP ANNOUNCEMENT BANNER */}
-      <div className="bg-gradient-to-r from-emerald-800 to-teal-950 text-white text-xs py-2 px-4 shadow-sm">
+      <div className="bg-gradient-to-r from-emerald-800 to-teal-950 text-white text-xs py-2 px-4 shadow-sm z-50 shrink-0">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-2">
-            <span className="bg-emerald-500 text-teal-950 font-bold px-2 py-0.5 rounded-full text-[10px]">VERSI LIVE 2026</span>
-            <span>Sekolah Kaligrafi LMS Bait Khat - Integrasi File Lossless, Alokasi Tutor & Koordinat E-Sertifikat</span>
+            <span className="bg-emerald-500 text-teal-950 font-bold px-2 py-0.5 rounded-full text-[10px]">PROTOTIPE INTERAKTIF</span>
+            <span>Sekolah Kaligrafi LMS Bait Khat - Integrasi File Lossless & Koordinat Cetak E-Sertifikat</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="opacity-90 font-mono text-emerald-300">Waktu Server: 2026-06-20</span>
@@ -512,163 +889,266 @@ export default function App() {
         </div>
       </div>
 
-      {/* 2. ELEGANT MAIN NAV */}
-      <header className="bg-white border-b border-emerald-50 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4.5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-600 rounded-xl text-white shadow-md shadow-emerald-600/20">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-emerald-950">BAIT KHAT</h1>
-              <p className="text-xs text-emerald-700/80 font-medium">LMS Kaligrafi Kontemporer</p>
-            </div>
-          </div>
+      {/* 2. DUAL LAYOUT CONTAINER: SIDEBAR + MAIN WORKSPACE */}
+      <div className="flex-1 flex flex-col md:flex-row relative">
 
-          {/* SIMULATED ROLE SWITCHER - VITAL FOR TESTING */}
-          <div className="bg-emerald-50/70 p-1.5 rounded-2xl border border-emerald-100 flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-widest px-2.5">Simulasi Akun:</span>
-            {db?.users.map(u => (
-              <button
-                key={u.id}
-                id={`btn-user-switch-${u.id}`}
-                onClick={() => handleUserSwitch(u.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  currentUser.id === u.id 
-                    ? 'bg-emerald-600 text-white shadow-sm' 
-                    : 'bg-white text-slate-600 hover:bg-emerald-100/50'
-                }`}
-              >
-                {u.name.split(' ')[0]} ({u.role === 'super_admin' ? 'S.Admin' : u.role === 'admin_cabang' ? 'AC' : u.role === 'tutor' ? 'Tutor' : 'Siswa'})
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      {/* 3. APP BODY MAIN WRAPPER */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-
-        {/* Global Notifications Panel */}
-        {successMsg && (
-          <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-6 rounded-r-xl shadow-sm flex items-start gap-3">
-            <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm font-medium text-emerald-800">{successMsg}</p>
-          </div>
-        )}
-        {errorMsg && (
-          <div className="bg-rose-50 border-l-4 border-rose-500 p-4 mb-6 rounded-r-xl shadow-sm flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm font-medium text-rose-800">{errorMsg}</p>
-          </div>
-        )}
-
-        {/* LOADING INDICATOR */}
-        {!db ? (
-          <div className="flex flex-col items-center justify-center p-20 text-slate-500">
-            <RefreshCw className="w-10 h-10 animate-spin text-emerald-600 mb-3" />
-            <p className="font-semibold text-lg">Memuat Arsitektur Relasi Database & Cloud Storage...</p>
-            <p className="text-sm opacity-70">Menyiapkan modul visualisasi khat lossless tanpa kompresi.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            
-            {/* LEFT CONTAINER: USER PROFILE PANEL & SIMULATOR LOGS */}
-            <div className="lg:col-span-1 space-y-6">
-              
-              {/* CURRENT ACCOUNT CARD */}
-              <div id="card-current-user" className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-100/30 rounded-full blur-2xl pointer-events-none"></div>
-                <div className="flex items-center gap-3.5 mb-4">
-                  <div className="w-12 h-12 bg-emerald-600/10 rounded-full flex items-center justify-center text-emerald-700 font-bold text-lg">
-                    {currentUser.name[0]}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 leading-tight">{currentUser.name}</h3>
-                    <span className="inline-block bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold px-2 py-0.5 mt-1 rounded-full border border-emerald-200">
-                      Role: {currentUser.role.replace('_', ' ')}
-                    </span>
-                  </div>
-                </div>
-                <div className="border-t border-slate-100 pt-3.5 space-y-2.5 text-xs text-slate-600">
-                  <div className="flex justify-between">
-                    <span className="opacity-75">Email:</span>
-                    <span className="font-semibold text-slate-800">{currentUser.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="opacity-75">WhatsApp:</span>
-                    <span className="font-mono text-slate-800">{currentUser.phone_number}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="opacity-75">Cabang ID:</span>
-                    <span className="font-semibold text-emerald-700">{currentUser.branch_id || "Kantor Pusat"}</span>
-                  </div>
-                </div>
+        {/* ==================== COLLAPSIBLE SIDEBAR ==================== */}
+        <aside 
+          className={`bg-slate-900 text-slate-100 flex flex-col shrink-0 transition-all duration-300 border-r border-slate-800 relative z-40 ${
+            sidebarOpen ? 'w-64' : 'w-16'
+          }`}
+        >
+          {/* Logo Brand Header */}
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="p-2 bg-emerald-600 rounded-xl text-white flex-shrink-0 shadow-lg shadow-emerald-600/10">
+                <Sparkles className="w-4 h-4" />
               </div>
+              {sidebarOpen && (
+                <div className="leading-tight">
+                  <h1 className="text-xs font-black tracking-wider text-white">BAIT KHAT</h1>
+                  <span className="text-[9px] text-emerald-400 font-bold block uppercase tracking-widest">LMS KALIGRAFI</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Collapse button on Desktop */}
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer hidden md:block"
+              title={sidebarOpen ? "Tutup Sidebar" : "Buka Sidebar"}
+            >
+              {sidebarOpen ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
+          </div>
 
-              {/* COURSE QUICK SELECTOR */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                <h4 className="font-bold text-slate-800 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">
-                  <BookOpen className="w-4 h-4 text-emerald-600" />
-                  <span>Program Aktif</span>
-                </h4>
-                <div className="space-y-2.5">
-                  {db.courses.map(c => (
+          {/* Collapsible Profile Summary Card */}
+          <div className="p-3.5 border-b border-slate-800/60 bg-slate-950/20">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0">
+                {currentUser.name[0]}
+              </div>
+              {sidebarOpen && (
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-slate-200 truncate leading-tight">{currentUser.name}</p>
+                  <span className="inline-block bg-slate-800/60 text-emerald-400 text-[8px] uppercase font-mono font-bold tracking-wider px-1.5 py-0.5 mt-1 rounded">
+                    {currentUser.role.replace('_', ' ')}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Responsive Sidebar Navigation Menus */}
+          <nav className="flex-1 px-2.5 py-4 space-y-1.5 overflow-y-auto">
+            {sidebarOpen && (
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-2.5 mb-2 block">
+                Menu Utama ({currentUser.role === 'siswa' ? 'Siswa' : currentUser.role === 'tutor' ? 'Tutor' : 'Admin'})
+              </p>
+            )}
+
+            {/* SUPER ADMIN / BRANCH ADMIN MENU */}
+            {(currentUser.role === 'super_admin' || currentUser.role === 'admin_cabang') && (
+              <div className="space-y-1">
+                {[
+                  { id: 'alokasi', label: 'Tutor Routing', icon: Navigation },
+                  { id: 'keuangan', label: 'Ledger Keuangan', icon: Wallet },
+                  { id: 'sertifikat', label: 'Mapping Sertifikat', icon: Award },
+                  { id: 'kurikulum', label: 'Kelola Kurikulum', icon: BookOpen }
+                ].map(item => {
+                  const Icon = item.icon;
+                  const active = adminTab === item.id;
+                  return (
                     <button
-                      key={c.id}
-                      id={`btn-course-select-${c.id}`}
-                      onClick={() => setActiveCourseId(c.id)}
-                      className={`w-full text-left p-3 rounded-xl transition-all border flex items-center justify-between ${
-                        activeCourseId === c.id 
-                          ? 'bg-emerald-50/70 border-emerald-200 ring-1 ring-emerald-200' 
-                          : 'bg-white border-slate-100 hover:bg-slate-50'
+                      key={item.id}
+                      onClick={() => setAdminTab(item.id as any)}
+                      title={item.label}
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        active 
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/10' 
+                          : 'text-slate-400 hover:bg-slate-850 hover:text-white'
                       }`}
                     >
-                      <div>
-                        <p className="font-bold text-xs text-slate-900 block">{c.title}</p>
-                        <p className="text-[10px] text-slate-500 mt-1 capitalize">{c.type.replaceAll('_', ' ')}</p>
-                      </div>
-                      <span className="text-[11px] font-bold text-emerald-700">Rp {c.price/1000}k</span>
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {sidebarOpen && <span className="truncate">{item.label}</span>}
                     </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* TUTOR MENU */}
+            {currentUser.role === 'tutor' && (
+              <div className="space-y-1">
+                {[
+                  { id: 'beranda', label: 'Tutor Dashboard', icon: Monitor },
+                  { id: 'koreksi', label: 'Koreksi Karya & Nilai', icon: Award }
+                ].map(item => {
+                  const Icon = item.icon;
+                  const active = tutorTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setTutorTab(item.id as any)}
+                      title={item.label}
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        active 
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/10' 
+                          : 'text-slate-400 hover:bg-slate-850 hover:text-white'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {sidebarOpen && <span className="truncate">{item.label}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* SISWA MENU */}
+            {currentUser.role === 'siswa' && (
+              <div className="space-y-1">
+                {[
+                  { id: 'belajar', label: 'Ruang Belajar', icon: BookOpen },
+                  { id: 'transaksi', label: 'Laporan Invoice', icon: Wallet }
+                ].map(item => {
+                  const Icon = item.icon;
+                  const active = siswaTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setSiswaTab(item.id as any)}
+                      title={item.label}
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        active 
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/10' 
+                          : 'text-slate-400 hover:bg-slate-850 hover:text-white'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {sidebarOpen && <span className="truncate">{item.label}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Course Quick Dropdown inside sidebar instead of big tiles */}
+            {sidebarOpen && (
+              <div className="pt-4 border-t border-slate-800 mt-4 px-1.5">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Pilih Program Aktif:</span>
+                <select 
+                  value={activeCourseId} 
+                  onChange={(e) => setActiveCourseId(e.target.value)}
+                  className="w-full bg-slate-800 text-xs text-slate-300 p-2 rounded-xl border border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                >
+                  {db.courses.map(c => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
                   ))}
-                </div>
+                </select>
               </div>
+            )}
+          </nav>
 
-              {/* WHATSAPP API QUEUE LOGS */}
-              <div className="bg-emerald-950 text-white rounded-2xl p-5 shadow-inner">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-bold text-emerald-300 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <Send className="w-3.5 h-3.5" />
-                    <span>WhatsApp Blast API Queue (Redis)</span>
-                  </h4>
-                  <span className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping"></span>
-                </div>
-                <p className="text-[11px] text-emerald-100/75 mb-3 leading-relaxed">
-                  Trigger otomatis pengiriman pesan notifikasi ke murid maupun pengajar saat transaksi/koreksi selesai.
-                </p>
+          {/* Mode Offline Alert inside Sidebar */}
+          {offlineActive && sidebarOpen && (
+            <div className="m-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <span className="text-[10px] text-amber-400 font-bold block">💡 Mode Offline Aktif</span>
+              <p className="text-[8.5px] text-slate-400 mt-1 leading-snug">
+                Semua modifikasi Anda disimpan langsung ke Local Storage.
+              </p>
+            </div>
+          )}
 
-                <div className="space-y-2.5 max-h-[190px] overflow-y-auto pr-1">
-                  {whatsappLogs.length === 0 ? (
-                    <p className="text-emerald-300/50 text-center py-6 text-xs italic">Belum ada antrean pesan keluar.</p>
-                  ) : (
-                    whatsappLogs.map(log => (
-                      <div key={log.id} className="bg-emerald-900/60 p-2.5 rounded-lg border border-emerald-800/80 text-[11px]">
-                        <div className="flex justify-between text-emerald-300 font-mono text-[9px] mb-1">
-                          <span>Phone: {log.phone}</span>
-                          <span>{log.date}</span>
-                        </div>
-                        <p className="text-white font-sans leading-snug">{log.text}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
+          {/* WhatsApp Queue at Sidebar Footer */}
+          {sidebarOpen && (
+            <div className="p-3 border-t border-slate-800 bg-slate-950/40 text-[10px]">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-slate-400 font-black uppercase text-[8px] tracking-wider">Redis Log Queue</span>
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span>
               </div>
+              <div className="max-h-[80px] overflow-y-auto space-y-1.5 mt-1 text-slate-300">
+                {whatsappLogs.length === 0 ? (
+                  <p className="text-slate-500 italic text-[9px] text-center my-2">Belum ada antrean pesan...</p>
+                ) : (
+                  whatsappLogs.slice(-2).map(log => (
+                    <div key={log.id} className="bg-slate-900/80 p-1.5 rounded border border-slate-800 text-[9px] leading-snug">
+                      <span className="text-emerald-400 font-mono block text-[8px] mb-0.5">{log.phone}</span>
+                      <p className="line-clamp-2 leading-tight">{log.text}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </aside>
 
+        {/* ==================== RIGHT MAIN CONTAINER WORKSPACE ==================== */}
+        <div className="flex-1 flex flex-col min-w-0 bg-slate-50 min-h-screen">
+          
+          {/* Header Workspace with Account Simulation & Menu Button */}
+          <header className="bg-white border-b border-rose-50/10 shadow-sm sticky top-0 z-30 shrink-0 px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {/* Mobile Sidebar Toggle */}
+              <button 
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition-colors block md:hidden cursor-pointer"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              
+              <div>
+                <h1 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                  LMS BAIT KHAT 
+                  <span className="hidden sm:inline bg-emerald-50 text-emerald-800 text-[10px] font-mono px-2 py-0.5 rounded-full border border-emerald-100 uppercase tracking-widest">
+                    {currentUser.role.replace('_', ' ')}
+                  </span>
+                </h1>
+                <p className="text-[10px] text-slate-500 leading-tight">Sekolah Seni Kaligrafi Kontemporer</p>
+              </div>
             </div>
 
+            {/* SIMULATED ACCOUNT SWITCHER - MAKES IT EASY TO RE-SIMULATE ALL ROLES */}
+            <div className="bg-emerald-50/60 p-1 rounded-xl border border-emerald-100/50 flex items-center gap-1">
+              <span className="text-[10px] font-bold text-emerald-850 uppercase px-2 hidden lg:inline tracking-wider">Simulasi Akun:</span>
+              <div className="flex items-center gap-1 flex-wrap">
+                {db.users.map(u => (
+                  <button
+                    key={u.id}
+                    id={`btn-user-switch-${u.id}`}
+                    onClick={() => handleUserSwitch(u.id)}
+                    className={`px-2 py-1 rounded-lg text-[10.5px] font-semibold transition-all cursor-pointer ${
+                      currentUser.id === u.id 
+                        ? 'bg-emerald-650 text-white shadow-sm' 
+                        : 'bg-white/80 text-slate-600 hover:bg-emerald-100/40'
+                    }`}
+                  >
+                    {u.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
 
-            {/* RIGHT MAIN PANEL: ACTIONS & INFORMATION GRID */}
-            <div className="lg:col-span-3 space-y-8">
+          {/* Main Content Workspace Layout with Notifications */}
+          <main className="flex-1 p-4 md:p-8 overflow-y-auto space-y-8 max-w-7xl w-full mx-auto">
+            
+            {/* Success and Error Indicators */}
+            {successMsg && (
+              <div className="bg-emerald-50 border-l-4 border-emerald-600 p-4 rounded-r-xl shadow-sm flex items-start gap-3">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5 animate-bounce" />
+                <p className="text-xs font-semibold text-emerald-800">{successMsg}</p>
+              </div>
+            )}
+            {errorMsg && (
+              <div className="bg-rose-50 border-l-4 border-rose-550 p-4 rounded-r-xl shadow-sm flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold text-rose-800">{errorMsg}</p>
+              </div>
+            )}
+
+            {/* RIGHT MAIN PANEL CONTENT WRAPPER */}
+            <div className="space-y-8">
               
               {/* BRAND ADVERT HERO */}
               <div className="bg-emerald-900 rounded-3xl p-6.5 text-white shadow-xl shadow-emerald-950/10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
@@ -1867,10 +2347,9 @@ export default function App() {
 
             </div>
 
-          </div>
-        )}
-
-      </main>
+          </main>
+        </div>
+      </div>
 
       {/* 4. FOOTER CREDITS */}
       <footer className="bg-slate-900 text-slate-400 py-10 mt-20 border-t border-slate-800">
