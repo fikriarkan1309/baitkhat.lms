@@ -1,0 +1,6 @@
+{
+  "name": "LMS Bait Khat",
+  "description": "Learning Management System (LMS) khusus Sekolah Kaligrafi / Khat dengan fitur alokasi tutor, lembar koreksi interaktif, laporan keuangan, dan e-sertifikat berbasis koordinat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
